@@ -114,6 +114,7 @@ const COLORS = [null,
   { base: "#a46a32", light: "#ecbc8c", dark: "#4a2408" }
 ];
 const DIRS = [[-1, 0], [-1, -1], [0, -1], [1, -1]];            // line axes (original table @0x420000)
+const FIG_W = 128, FIG_H = 120, GAUGE_MAX = 125, BASE_H = 9, COLUMN_H = FIG_H + GAUGE_MAX + BASE_H;   // king/pretender column
 const T = { scale: 1 };                                           // animation time scale (tests set it to 0)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms * T.scale));
 
@@ -383,16 +384,16 @@ function computeLayout(m) {
     const W = 612, H = 374, bx = Math.trunc((W - 0x148) / 2);
     return { W, H, boardX: bx, boardY: Math.trunc((H - 0x178) / 2) + 0x2e, previewX: Math.trunc((W - 0x6c) / 2), previewY: 5,
       curBoxX: W - 0x60, kingBoxX: 0x18, boxY: 10, nextRight: Math.trunc((W - 0x6c) / 2) - 0x0f, colorsLeft: Math.trunc((W - 0x6c) / 2) + 0x7d,
-      kingX: Math.trunc((bx - 0x3a) / 2), pretX: bx + 0x148 + Math.trunc((bx - 0x3a) / 2), baseY: Math.trunc((H - 0xea) / 2) + 0xea };
+      kingCx: Math.trunc(bx / 2), pretCx: bx + 0x148 + Math.trunc(bx / 2), baseY: Math.trunc((H - COLUMN_H) / 2) + COLUMN_H };
   }
   const W = 360, H = 664, bx = 16, by = 45;
   const px = Math.trunc((W - 0x6c) / 2);
   return { W, H, boardX: bx, boardY: by, previewX: px, previewY: 5, curBoxX: W - 72, kingBoxX: -16, boxY: 10,
-    nextRight: px - 8, colorsLeft: px + 108 + 8, kingX: 66, pretX: 236, baseY: by + 330 + 12 + 234 };
+    nextRight: px - 8, colorsLeft: px + 108 + 8, kingCx: 90, pretCx: 270, baseY: by + 330 + 12 + COLUMN_H };
 }
 function applyLayout() {
   const vw = window.innerWidth, vh = window.innerHeight;
-  const reserve = vw >= 900 ? 196 : 0;                                  // keeps room for the Statistics window on desktop
+  const reserve = S.statsVisible && vw >= 900 ? 196 : 0;                // room beside the window, only while Statistics is open
   const s1 = Math.min((vw - 10 - reserve) / 612, (vh - 62) / 374);
   const s2 = Math.min((vw - 10) / 360, (vh - 40) / 664);
   mode = s2 > s1 ? "compact" : "classic";
@@ -404,8 +405,8 @@ function applyLayout() {
   canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr);
   const win = document.getElementById("win");
   win.style.width = cw + 4 + 4 + "px";
-  const wh = win.offsetHeight;
-  win.style.left = Math.max(0, Math.round((vw - win.offsetWidth - (mode === "classic" ? reserve : 0)) / 2)) + "px";
+  const wh = win.offsetHeight, groupW = win.offsetWidth + (mode === "classic" ? reserve : 0);
+  win.style.left = Math.max(0, Math.round((vw - groupW) / 2)) + "px";   // the window (plus Statistics, when shown beside it) stays centred
   win.style.top = Math.max(0, Math.round((vh - wh) / 2)) + "px";
   positionStats(); invalidate();
 }
@@ -498,70 +499,39 @@ function boardView(c) {
   }
 }
 
-/* The king and the pretender are newly drawn (the original artwork is not used). */
-const SKIN = "#f1c27d", GOLD = "#e0a800";
-function crown(c, x, y, rot) {
-  c.save(); c.translate(x, y); c.rotate(rot);
-  c.fillStyle = GOLD; c.strokeStyle = "#7a5200"; c.lineWidth = 1;
-  c.beginPath(); c.moveTo(-9, 0); c.lineTo(-10, -10); c.lineTo(-4.5, -5); c.lineTo(0, -12); c.lineTo(4.5, -5); c.lineTo(10, -10); c.lineTo(9, 0); c.closePath(); c.fill(); c.stroke();
-  c.fillStyle = "#d02020"; c.beginPath(); c.arc(0, -3, 1.8, 0, 7); c.fill();
-  c.restore();
+/* The King ("Handicap") and the Pretender are the cat portraits supplied for this project (assets/). */
+const ART = { king: new Image(), pret: new Image() };
+ART.king.onload = ART.pret.onload = () => invalidate();
+ART.king.src = "assets/handicap.jpg";
+ART.pret.src = "assets/pretender.jpg";
+function sparkle(c, x, y, r) {
+  c.beginPath(); c.moveTo(x, y - r); c.lineTo(x + r * 0.3, y - r * 0.3); c.lineTo(x + r, y); c.lineTo(x + r * 0.3, y + r * 0.3);
+  c.lineTo(x, y + r); c.lineTo(x - r * 0.3, y + r * 0.3); c.lineTo(x - r, y); c.lineTo(x - r * 0.3, y - r * 0.3); c.closePath(); c.fill();
 }
-function drawKing(c, bx, by, f) {
-  c.save(); c.translate(bx, by);
-  c.fillStyle = "#7a2020"; c.fillRect(14, 30, 44, 62); c.beginPath(); c.arc(36, 30, 22, Math.PI, 0); c.fill();
-  c.strokeStyle = GOLD; c.lineWidth = 2; c.strokeRect(14, 30, 44, 62);
-  c.fillStyle = "#5b2a86"; c.beginPath(); c.moveTo(19, 92); c.lineTo(25, 56); c.lineTo(47, 56); c.lineTo(53, 92); c.closePath(); c.fill();
-  c.fillStyle = "#fff"; c.fillRect(21, 85, 30, 7); c.fillStyle = "#222";
-  for (let i = 0; i < 5; i++) c.fillRect(24 + i * 6, 87, 2, 3);
-  c.fillStyle = "#5b2a86"; c.beginPath(); c.ellipse(22, 70, 5, 11, 0.1, 0, 7); c.ellipse(50, 70, 5, 11, -0.1, 0, 7); c.fill();
-  c.fillStyle = SKIN; c.beginPath(); c.arc(22, 81, 3.2, 0, 7); c.arc(50, 81, 3.2, 0, 7); c.fill();
-  c.fillStyle = "#f4f4f4"; c.beginPath(); c.moveTo(25, 46); c.quadraticCurveTo(24, 66, 36, 68); c.quadraticCurveTo(48, 66, 47, 46); c.closePath(); c.fill();
-  c.fillStyle = SKIN; c.beginPath(); c.arc(36, 44, 12, 0, 7); c.fill();
-  c.strokeStyle = "#222"; c.lineWidth = 1.4; c.fillStyle = "#111";
-  c.beginPath(); c.arc(32, 42, 1.5, 0, 7); c.arc(40, 42, 1.5, 0, 7); c.fill();
-  c.beginPath();
-  if (f >= 3) { c.moveTo(29, 37); c.lineTo(34, 39.5); c.moveTo(43, 37); c.lineTo(38, 39.5); } else { c.moveTo(29, 38.5); c.lineTo(34, 38.5); c.moveTo(38, 38.5); c.lineTo(43, 38.5); }
-  c.stroke();
-  c.beginPath();
-  if (f <= 2) c.arc(36, 50, 5, 0.2, Math.PI - 0.2); else if (f === 3) { c.moveTo(31, 54); c.lineTo(41, 54); } else c.arc(36, 59, 5, Math.PI + 0.3, -0.3);
-  c.stroke();
-  if (f >= 5) { c.fillStyle = "#58a0ff"; c.beginPath(); c.ellipse(44, 47, 1.6, 2.6, 0, 0, 7); c.fill(); }
-  if (f <= 3) crown(c, 36, f === 3 ? 28 : 32, f === 3 ? 0.35 : 0);
-  c.fillStyle = "#b8860b"; c.fillRect(12, 90, 48, 8);
-  c.restore();
-}
-function drawPretender(c, bx, by, f) {
-  c.save(); c.translate(bx, by);
-  c.fillStyle = "#2b2b45"; c.fillRect(29, 78, 6, 18); c.fillRect(37, 78, 6, 18);
-  c.fillStyle = "#111"; c.fillRect(27, 94, 9, 4); c.fillRect(36, 94, 9, 4);
-  c.fillStyle = "#2a62b8"; c.fillRect(27, 54, 18, 26);
-  c.fillStyle = "#c82828"; c.fillRect(35, 54, 2, 12);
-  c.strokeStyle = "#2a62b8"; c.lineWidth = 5; c.lineCap = "round";
-  c.beginPath();
-  if (f >= 5) { c.moveTo(28, 58); c.lineTo(17, 42); c.moveTo(44, 58); c.lineTo(55, 42); } else { c.moveTo(28, 58); c.lineTo(22, 76); c.moveTo(44, 58); c.lineTo(50, 76); }
-  c.stroke();
-  c.fillStyle = SKIN; c.beginPath();
-  if (f >= 5) { c.arc(17, 40, 3.3, 0, 7); c.arc(55, 40, 3.3, 0, 7); } else { c.arc(22, 77, 3.3, 0, 7); c.arc(50, 77, 3.3, 0, 7); }
-  c.fill();
-  c.beginPath(); c.arc(36, 42, 11, 0, 7); c.fill();
-  c.fillStyle = "#4a2c0a"; c.beginPath(); c.arc(36, 40, 11.5, Math.PI, 0); c.fill();
-  c.fillStyle = "#111"; c.beginPath(); c.arc(32, 43, 1.5, 0, 7); c.arc(40, 43, 1.5, 0, 7); c.fill();
-  c.strokeStyle = "#222"; c.lineWidth = 1.4; c.lineCap = "butt"; c.beginPath();
-  if (f >= 5) c.arc(36, 46, 5, 0.1, Math.PI - 0.1); else if (f === 4) c.arc(36, 50, 2.5, 0, 7); else { c.moveTo(32, 50); c.lineTo(36, 51); c.lineTo(41, 48.5); }
-  c.stroke();
-  if (f === 4) crown(c, 36, 16, 0.15);
-  else if (f === 5) crown(c, 36, 31, 0.2);
-  else if (f >= 6) {
-    crown(c, 36, 31, 0);
-    c.fillStyle = "#fff6a0";
-    for (const [sx, sy] of [[18, 22], [56, 22], [12, 52], [60, 52]]) { c.beginPath(); c.moveTo(sx, sy - 4); c.lineTo(sx + 1.2, sy - 1.2); c.lineTo(sx + 4, sy); c.lineTo(sx + 1.2, sy + 1.2); c.lineTo(sx, sy + 4); c.lineTo(sx - 1.2, sy + 1.2); c.lineTo(sx - 4, sy); c.lineTo(sx - 1.2, sy - 1.2); c.closePath(); c.fill(); }
+/* f is the original's animation frame counter: the king slumps and fades as it rises, the pretender hops and sparkles. */
+function drawFigure(c, kind, cx, bottom, f) {
+  const img = ART[kind];
+  if (!img.complete || !img.naturalWidth) return;
+  const k = Math.min(FIG_W / img.naturalWidth, FIG_H / img.naturalHeight);
+  const w = img.naturalWidth * k, ht = img.naturalHeight * k;
+  c.save();
+  c.imageSmoothingEnabled = true; c.imageSmoothingQuality = "high";
+  c.translate(cx, bottom);
+  if (kind === "king") {
+    c.rotate(-0.012 * f); c.globalAlpha = 1 - 0.06 * f;
+    c.drawImage(img, -w / 2, -ht + f * 1.5, w, ht);
+  } else {
+    c.drawImage(img, -w / 2, -ht - f * 1.5, w, ht);
+    if (f >= 5) {
+      c.fillStyle = "#fff6a0";
+      for (const [sx, sy, r] of [[-w * 0.5, -ht * 0.85, 5], [w * 0.5, -ht * 0.75, 6], [-w * 0.42, -ht * 0.3, 4], [w * 0.46, -ht * 0.3, 4]]) sparkle(c, sx, sy - f * 1.5, r);
+    }
   }
   c.restore();
 }
-function column(c, kind, boxX, gauge, frame, name) {
-  const top = L.baseY - 234, boxTop = top + gauge, cx = boxX + 36;
-  const poleTop = boxTop + 100, poleBottom = L.baseY - 9;
+function column(c, kind, cx, gauge, frame, name) {
+  const top = L.baseY - COLUMN_H, boxTop = top + gauge;
+  const poleTop = boxTop + FIG_H, poleBottom = L.baseY - BASE_H;
   if (poleBottom > poleTop) {
     const g = c.createLinearGradient(cx - 22, 0, cx + 22, 0);
     g.addColorStop(0, "#5a5a5a"); g.addColorStop(0.4, "#d0d0d0"); g.addColorStop(1, "#4a4a4a");
@@ -571,8 +541,8 @@ function column(c, kind, boxX, gauge, frame, name) {
   }
   const bg = c.createLinearGradient(cx - 29, 0, cx + 29, 0);
   bg.addColorStop(0, "#707070"); bg.addColorStop(0.5, "#e0e0e0"); bg.addColorStop(1, "#606060");
-  c.fillStyle = bg; c.fillRect(cx - 29, L.baseY - 9, 58, 9);
-  if (kind === "king") drawKing(c, boxX, boxTop, frame); else drawPretender(c, boxX, boxTop, frame);
+  c.fillStyle = bg; c.fillRect(cx - 29, L.baseY - BASE_H, 58, BASE_H);
+  drawFigure(c, kind, cx, boxTop + FIG_H, frame);
   text(c, name, cx, L.baseY + 8, "center", "#fff", 11, false);
 }
 function render() {
@@ -580,8 +550,8 @@ function render() {
   ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
   ctx.fillStyle = "#000"; ctx.fillRect(0, 0, L.W, L.H);
   boardView(ctx);
-  column(ctx, "king", L.kingX - 1, S.kingGauge, S.kingFrame, S.kingName);
-  column(ctx, "pret", L.pretX - 10, S.pretGauge, S.pretFrame, "Pretender");
+  column(ctx, "king", L.kingCx, S.kingGauge, S.kingFrame, S.kingName);
+  column(ctx, "pret", L.pretCx, S.pretGauge, S.pretFrame, "Pretender");
   topBar(ctx);
 }
 
@@ -640,7 +610,7 @@ function aboutDialog() {
     h("div", { class: "group", style: "padding:8px" }, h("p", { style: "font-weight:bold;margin-bottom:4px" }, "Credits"),
       h("p", {}, "Win32 version 1.21: Ivan Golubev (1998-1999)"),
       h("p", {}, "This page is an HTML recreation of Color Linez, rebuilt from the behaviour of the Win32 version."),
-      h("p", {}, "All artwork here is newly drawn."))),
+      h("p", {}, "Ball and window artwork is newly drawn; the King (Handicap) and Pretender cat portraits are custom artwork supplied for this project."))),
     [{ label: "Ok", def: true, value: true }], { escape: true, width: 330 });
 }
 function highScoresDialog() {
@@ -684,7 +654,8 @@ function updateStats() {
 function setStats(show) {
   S.statsVisible = show;
   document.getElementById("stats").classList.toggle("show", show);
-  if (show) { updateStats(); positionStats(); }
+  if (show) updateStats();
+  applyLayout();                                                        // re-centres the window for the new width
 }
 
 /* ------------------------------------------------------------------ menu, commands */
