@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#008080">
-<title>Color linez</title>
+<title>Cat Linez</title>
 <style>
   :root { --face:#c0c0c0; --hi:#ffffff; --light:#dfdfdf; --shadow:#808080; --dark:#404040; }
   * { box-sizing: border-box; }
@@ -80,13 +80,13 @@
 <div id="win" class="raised">
   <div class="titlebar" id="titlebar">
     <canvas id="ticon" width="32" height="32"></canvas>
-    <span class="t">Color linez</span>
+    <span class="t">Cat Linez</span>
     <button class="tbtn raised" tabindex="-1" aria-hidden="true">_</button>
     <button class="tbtn raised" tabindex="-1" aria-hidden="true">&#9633;</button>
     <button class="tbtn raised" id="tclose" aria-label="Close (Exit)">&#215;</button>
   </div>
   <div class="menubar" id="menubar" role="menubar"></div>
-  <div id="clientwrap" class="sunken"><canvas id="game" aria-label="Color linez board"></canvas></div>
+  <div id="clientwrap" class="sunken"><canvas id="game" aria-label="Cat Linez board"></canvas></div>
 </div>
 
 <div id="stats" class="raised" role="dialog" aria-label="Statistics">
@@ -94,7 +94,7 @@
   <div class="rows" id="srows"></div>
 </div>
 
-<div id="exited"><button class="ic" id="relaunch"><canvas id="eicon" width="96" height="96"></canvas><span>Color linez</span></button></div>
+<div id="exited"><button class="ic" id="relaunch"><canvas id="eicon" width="96" height="96"></canvas><span>Cat Linez</span></button></div>
 
 <script>
 (() => {
@@ -335,7 +335,7 @@ async function doMove(path, color) {
   }
   for (let i = 0; i < 3; i++) await spawnBall();
   if (countEmpty() !== 0) { refreshPreview(); updateStats(); return; }
-  await msgBox("Game over!", "Color linez", "warn");
+  await msgBox("Game over!", "Cat Linez", "warn");
   await recordHighScore();
   await finishAndRestart();
 }
@@ -502,8 +502,8 @@ function boardView(c) {
 /* The King ("Handicap") and the Pretender are the cat portraits supplied for this project (assets/). */
 const ART = { king: new Image(), pret: new Image() };
 ART.king.onload = ART.pret.onload = () => invalidate();
-ART.king.src = "assets/handicap.jpg";
-ART.pret.src = "assets/pretender.jpg";
+ART.king.src = "assets/handicap.png";
+ART.pret.src = "assets/pretender.png";
 function sparkle(c, x, y, r) {
   c.beginPath(); c.moveTo(x, y - r); c.lineTo(x + r * 0.3, y - r * 0.3); c.lineTo(x + r, y); c.lineTo(x + r * 0.3, y + r * 0.3);
   c.lineTo(x, y + r); c.lineTo(x - r * 0.3, y + r * 0.3); c.lineTo(x - r, y); c.lineTo(x - r * 0.3, y - r * 0.3); c.closePath(); c.fill();
@@ -609,7 +609,7 @@ function aboutDialog() {
       h("p", {}, "Copyright (c) GAMOS LTD. 1992. Russia"), h("p", {}, "Programming: Olga Demina"), h("p", {}, "Graphics: Igor Ivkin & Gennady Denisov")),
     h("div", { class: "group", style: "padding:8px" }, h("p", { style: "font-weight:bold;margin-bottom:4px" }, "Credits"),
       h("p", {}, "Win32 version 1.21: Ivan Golubev (1998-1999)"),
-      h("p", {}, "This page is an HTML recreation of Color Linez, rebuilt from the behaviour of the Win32 version."),
+      h("p", {}, "Cat Linez is an HTML recreation of Color Linez, rebuilt from the behaviour of the Win32 version."),
       h("p", {}, "Ball and window artwork is newly drawn; the King (Handicap) and Pretender cat portraits are custom artwork supplied for this project."))),
     [{ label: "Ok", def: true, value: true }], { escape: true, width: 330 });
 }

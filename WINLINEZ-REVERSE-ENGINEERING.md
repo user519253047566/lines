@@ -481,7 +481,7 @@ Implemented as in the original:
 
 | Area | Original | index.html |
 | --- | --- | --- |
-| Artwork | original sprite sheet (not decoded) | balls, tiles and window chrome newly drawn; the King ("Handicap") and Pretender are the supplied cat portraits in [assets/](./assets) (`handicap.jpg`, `pretender.jpg`), scaled to fit a 128×120 box on top of the pole. The original's frame animation is approximated: the dethroned king slumps and fades, the pretender rises, hops and sparkles |
+| Artwork | original sprite sheet (not decoded) | balls, tiles and window chrome newly drawn; the King ("Handicap") and Pretender are the supplied cat portraits in [assets/](./assets) (`handicap.png`, `pretender.png`, transparent), scaled to fit a 128×120 box on top of the pole. The original's frame animation is approximated: the dethroned king slumps and fades, the pretender rises, hops and sparkles |
 | Layout | window recomputed from client size | same formulas at 612×374 (scaled to fit), always centred in the browser; while the Statistics window is open the pair is centred together. On narrow portrait screens a compact layout puts the king and pretender under the board so cells stay ≥ ~38 px |
 | High-score storage | `winlines.res`/`lines.res` file, written on exit | `localStorage`, written immediately when the table changes |
 | Exit | closes the window | shows a "Color linez" icon; click it to start again |
