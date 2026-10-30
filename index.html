@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#008080">
+<title>Color linez</title>
+<style>
+  :root { --face:#c0c0c0; --hi:#ffffff; --light:#dfdfdf; --shadow:#808080; --dark:#404040; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden; background: #008080; color: #000;
+    font: 11px Tahoma, "MS Sans Serif", Verdana, Arial, sans-serif;
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+  }
+  button, input { font: inherit; }
+
+  .raised  { border: 2px solid; border-color: var(--light) var(--dark) var(--dark) var(--light);
+             box-shadow: inset 1px 1px var(--hi), inset -1px -1px var(--shadow); background: var(--face); }
+  .sunken  { border: 2px solid; border-color: var(--shadow) var(--hi) var(--hi) var(--shadow);
+             box-shadow: inset 1px 1px var(--dark), inset -1px -1px var(--light); }
+  .group   { border: 2px groove var(--hi); border-color: var(--hi) var(--shadow) var(--shadow) var(--hi);
+             outline: 1px solid var(--shadow); outline-offset: -3px; }
+
+  #win { position: absolute; padding: 2px; }
+  .titlebar { height: 18px; display: flex; align-items: center; gap: 4px; padding: 0 2px 0 3px; color: #fff; font-weight: bold;
+              background: linear-gradient(90deg, #000080, #1084d0); }
+  .titlebar canvas { width: 16px; height: 16px; }
+  .titlebar .t { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .tbtn { width: 16px; height: 14px; padding: 0; display: grid; place-items: center; font-size: 10px; line-height: 1; color: #000; cursor: default; }
+  .menubar { height: 20px; display: flex; position: relative; }
+  .menubar .mi { padding: 3px 8px 0; height: 20px; cursor: default; }
+  .menubar .mi.open { border: 1px solid; border-color: var(--shadow) var(--hi) var(--hi) var(--shadow); padding: 2px 7px 0; }
+  .menubar .mi:hover:not(.open) { border: 1px solid; border-color: var(--hi) var(--shadow) var(--shadow) var(--hi); padding: 2px 7px 0; }
+  .dropdown { position: absolute; top: 20px; min-width: 170px; padding: 2px; z-index: 30; }
+  .dropdown .it { display: flex; justify-content: space-between; gap: 24px; padding: 3px 18px 3px 22px; position: relative; cursor: default; white-space: nowrap; }
+  .dropdown .it:hover { background: #000080; color: #fff; }
+  .dropdown .it .chk { position: absolute; left: 6px; }
+  .dropdown .sep { height: 2px; margin: 3px 1px; border-top: 1px solid var(--shadow); border-bottom: 1px solid var(--hi); }
+  #clientwrap { background: #000; line-height: 0; }
+  #game { display: block; touch-action: none; cursor: default; }
+
+  .overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(0,0,0,0.0); }
+  .dlg { padding: 2px; max-width: calc(100vw - 12px); max-height: calc(100vh - 12px); overflow: auto; }
+  .dlg .body { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .dlg p { margin: 0; line-height: 1.35; }
+  .btn { min-width: 70px; height: 24px; padding: 0 10px; background: var(--face); cursor: default; color: #000;
+         border: 2px solid; border-color: var(--hi) var(--dark) var(--dark) var(--hi); box-shadow: inset -1px -1px var(--shadow), inset 1px 1px var(--light); }
+  .btn:active { border-color: var(--dark) var(--hi) var(--hi) var(--dark); box-shadow: inset 1px 1px var(--shadow); padding: 2px 9px 0 11px; }
+  .btn.def { outline: 1px solid #000; outline-offset: -4px; }
+  .btn:focus-visible { outline: 1px dotted #000; outline-offset: -5px; }
+  .row-c { display: flex; justify-content: center; gap: 8px; }
+  .msg { display: flex; gap: 14px; align-items: center; padding: 6px 4px; }
+  .msg .ico { flex: 0 0 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font: bold 20px Georgia, serif; color: #fff; }
+  .ico.warn { background: #e8c800; color: #000; border-radius: 4px; clip-path: polygon(50% 0, 100% 100%, 0 100%); padding-top: 8px; }
+  .ico.info { background: #0000c0; }
+  .ico.err  { background: #c00000; }
+  table.hs { width: 100%; border-collapse: collapse; font: 15px "MS Sans Serif", Tahoma, Arial, sans-serif; }
+  table.hs td { padding: 1px 4px; height: 20px; }
+  table.hs td:last-child { text-align: right; }
+  input.name { width: 110px; height: 21px; padding: 1px 3px; background: #fff; border: 2px solid; border-color: var(--shadow) var(--hi) var(--hi) var(--shadow); box-shadow: inset 1px 1px var(--dark); outline: none; }
+  .credits p { text-align: center; }
+
+  #stats { position: absolute; z-index: 20; width: 180px; padding: 2px; display: none; }
+  #stats.show { display: block; }
+  #stats .rows { background: var(--face); padding: 2px 0; }
+  #stats .r { display: flex; align-items: center; height: 36px; gap: 8px; padding-left: 4px; font: 12px "MS Sans Serif", Tahoma, Arial, sans-serif; white-space: pre; }
+  #stats canvas { width: 36px; height: 36px; }
+
+  #exited { position: fixed; inset: 0; display: none; place-items: center; background: #008080; z-index: 90; }
+  #exited.show { display: grid; }
+  #exited .ic { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #fff; cursor: pointer; background: none; border: 1px dotted transparent; padding: 6px; }
+  #exited .ic:focus-visible { border-color: #fff; }
+  #exited canvas { width: 48px; height: 48px; }
+
+  @media (max-width: 700px) { .titlebar { display: none; } }
+</style>
+</head>
+<body>
+<div id="win" class="raised">
+  <div class="titlebar" id="titlebar">
+    <canvas id="ticon" width="32" height="32"></canvas>
+    <span class="t">Color linez</span>
+    <button class="tbtn raised" tabindex="-1" aria-hidden="true">_</button>
+    <button class="tbtn raised" tabindex="-1" aria-hidden="true">&#9633;</button>
+    <button class="tbtn raised" id="tclose" aria-label="Close (Exit)">&#215;</button>
+  </div>
+  <div class="menubar" id="menubar" role="menubar"></div>
+  <div id="clientwrap" class="sunken"><canvas id="game" aria-label="Color linez board"></canvas></div>
+</div>
+
+<div id="stats" class="raised" role="dialog" aria-label="Statistics">
+  <div class="titlebar"><span class="t">Statistics</span><button class="tbtn raised" id="sclose" aria-label="Close statistics">&#215;</button></div>
+  <div class="rows" id="srows"></div>
+</div>
+
+<div id="exited"><button class="ic" id="relaunch"><canvas id="eicon" width="96" height="96"></canvas><span>Color linez</span></button></div>
+
+<script>
+(() => {
+"use strict";
+
+/* ------------------------------------------------------------------ constants */
+const N = 9, CELL = 36, COLORS_N = 7;
+const FONT = 'Tahoma, "MS Sans Serif", Verdana, Arial, sans-serif';
+const HS_KEY = "colorlinez.winlines.res";
+const COLORS = [null,
+  { base: "#e02828", light: "#ff9c9c", dark: "#6e0000" },
+  { base: "#2cb82c", light: "#aaffaa", dark: "#005a00" },
+  { base: "#2c54e6", light: "#aebcff", dark: "#00127a" },
+  { base: "#f0d820", light: "#fffbb4", dark: "#8a7600" },
+  { base: "#d42cd4", light: "#ffb0ff", dark: "#5c005c" },
+  { base: "#2cd0e0", light: "#b4ffff", dark: "#006a78" },
+  { base: "#a46a32", light: "#ecbc8c", dark: "#4a2408" }
+];
+const DIRS = [[-1, 0], [-1, -1], [0, -1], [1, -1]];            // line axes (original table @0x420000)
+const T = { scale: 1 };                                           // animation time scale (tests set it to 0)
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms * T.scale));
+
+/* ------------------------------------------------------------------ random (ANSI C LCG, as in the original) */
+let seed = (Date.now() & 0xffffffff) >>> 0;
+const randBelow = (n) => {
+  seed = (Math.imul(seed, 0x41c64e6d) + 0x3039) >>> 0;
+  return ((seed >>> 16) & 0x7fff) % n;
+};
+
+/* ------------------------------------------------------------------ state */
+const S = {
+  board: new Uint8Array(81),
+  next: [1, 1, 1], preview: [1, 1, 1],
+  score: 0, phase: 0, kingScore: 100, kingName: "Handicap", playerName: "Pretender",
+  kingGauge: 0, kingFrame: 0, pretGauge: 125, pretFrame: 0,
+  removed: new Array(8).fill(0),
+  selected: null, tick: 0,
+  nextVisible: true, statsVisible: false,
+  hs: [], busy: false, dialogs: 0, exited: false,
+  cellFrame: new Map(), down: null
+};
+const idx = (x, y) => y * 9 + x;
+
+/* ------------------------------------------------------------------ high scores */
+const defaultHS = () => Array.from({ length: 10 }, (_, i) => (i ? { name: "- Empty -", score: 0 } : { name: "Handicap", score: 100 }));
+function loadHS() {
+  try {
+    const a = JSON.parse(localStorage.getItem(HS_KEY));
+    if (Array.isArray(a) && a.length === 10 && a.every((e) => e && typeof e.name === "string" && Number.isInteger(e.score) && e.score >= 0 && e.score <= 65535))
+      return a.map((e) => ({ name: e.name.slice(0, 13), score: e.score }));
+  } catch (e) { /* fall through to defaults */ }
+  return defaultHS();
+}
+function saveHS() { try { localStorage.setItem(HS_KEY, JSON.stringify(S.hs)); } catch (e) { /* storage unavailable */ } }
+
+/* ------------------------------------------------------------------ game rules */
+const countEmpty = () => { let c = 0; for (let i = 0; i < 81; i++) if (S.board[i] === 0) c++; return c; };
+const lineScore = (n) => 10 + 2 * (n - 5) * (n - 5);
+
+/* Lee wave pathfinder: 4-neighbour, empty cells only; neighbours scanned up, left, down, right. */
+function findPath(sx, sy, dx, dy) {
+  const b = S.board.slice();
+  b[idx(sx, sy)] = 8;
+  let w = 8;
+  do {
+    const cur = w;
+    for (let y = 0; y < 9; y++) for (let x = 0; x < 9; x++) {
+      if (b[idx(x, y)] !== cur) continue;
+      if (y !== 0 && b[idx(x, y - 1)] === 0) b[idx(x, y - 1)] = cur + 1;
+      if (x !== 0 && b[idx(x - 1, y)] === 0) b[idx(x - 1, y)] = cur + 1;
+      if (y !== 8 && b[idx(x, y + 1)] === 0) b[idx(x, y + 1)] = cur + 1;
+      if (x !== 8 && b[idx(x + 1, y)] === 0) b[idx(x + 1, y)] = cur + 1;
+    }
+    w = cur + 1;
+  } while (b[idx(dx, dy)] !== w && w < 0x5a);
+  if (w === 0x5a) return null;
+  const path = [[dx, dy]];
+  let cx = dx, cy = dy;
+  for (let v = w - 1; v >= 8; v--) {
+    if (cy !== 0 && b[idx(cx, cy - 1)] === v) cy--;
+    else if (cx !== 0 && b[idx(cx - 1, cy)] === v) cx--;
+    else if (cy !== 8 && b[idx(cx, cy + 1)] === v) cy++;
+    else cx++;
+    path.push([cx, cy]);
+  }
+  return path.reverse();   // source ... destination
+}
+
+/* Flags (|0x40) every line of >=5 through (x,y); returns the summed run lengths (origin counted per axis). */
+function markLines(x, y) {
+  const b = S.board, col = b[idx(x, y)];
+  let total = 0;
+  for (const [ddx, ddy] of DIRS) {
+    let count = 1, cx = x, cy = y;
+    for (let i = 1; i < 8; i++) {
+      cx += ddx; cy += ddy;
+      if (cx < 0 || cx > 8 || cy < 0 || cy > 8 || b[idx(cx, cy)] !== col) break;
+      count++; b[idx(cx, cy)] |= 0x40;
+    }
+    cx = x; cy = y;
+    for (let i = 1; i < 8; i++) {
+      cx -= ddx; cy -= ddy;
+      if (cx < 0 || cx > 8 || cy < 0 || cy > 8 || b[idx(cx, cy)] !== col) break;
+      count++; b[idx(cx, cy)] |= 0x40;
+    }
+    if (count < 5) {
+      for (const sgn of [1, -1]) {
+        cx = x; cy = y;
+        for (let i = 1; i < 8; i++) {
+          cx += sgn * ddx; cy += sgn * ddy;
+          if (cx < 0 || cx > 8 || cy < 0 || cy > 8) break;
+          b[idx(cx, cy)] &= 0x3f;
+        }
+      }
+    } else total += count;
+  }
+  if (total) b[idx(x, y)] = col | 0x40;
+  return total;
+}
+
+async function removeMarked() {
+  let frame = 8, removedCount = 0, color = 0;
+  for (let pass = 0; pass < 3; pass++) {
+    for (let i = 0; i < 81; i++) {
+      const v = S.board[i];
+      if (v & 0x40) {
+        if (frame === 0) { color = v & 0x3f; S.board[i] = 0; removedCount++; }
+        S.cellFrame.set(i, { frame, color: v & 0x3f });
+      }
+    }
+    invalidate();
+    await sleep(50);
+    if (pass === 0) frame = 9; else if (pass === 1) frame = 0;
+  }
+  S.cellFrame.clear();
+  S.removed[color] += removedCount;
+  updateStats(); invalidate();
+}
+
+const initQueue = () => { for (let i = 0; i < 3; i++) S.next[i] = randBelow(COLORS_N) + 1; };
+const refreshPreview = () => { S.preview = S.next.slice(); invalidate(); };
+
+/* Places the next queued ball on a random empty cell; a ball that completes a line is removed (no score)
+   and the next queued ball is placed, until a ball is placed that makes no line. */
+async function spawnBall() {
+  for (;;) {
+    const e = countEmpty();
+    if (e === 0) break;
+    let k = randBelow(e), cell = -1;
+    for (let i = 0; i < 81; i++) {
+      if (S.board[i] !== 0) continue;
+      if (k === 0) { cell = i; break; }
+      k--;
+    }
+    if (cell < 0) { await msgBox("Report me!", "Error", "err"); break; }
+    S.board[cell] = S.next[0];
+    S.next[0] = S.next[1]; S.next[1] = S.next[2]; S.next[2] = randBelow(COLORS_N) + 1;
+    const col = S.board[cell];
+    S.cellFrame.set(cell, { frame: 6, color: col }); invalidate(); await sleep(50);
+    S.cellFrame.set(cell, { frame: 7, color: col }); invalidate(); await sleep(50);
+    S.cellFrame.delete(cell); invalidate();
+    const total = markLines(cell % 9, Math.floor(cell / 9));
+    if (total) await removeMarked(); else break;
+  }
+  invalidate();
+}
+
+async function addScore(delta) {
+  S.score += delta; invalidate();
+  const king = Math.max(1, S.kingScore);
+  if (S.phase === 0) {
+    const target = Math.max(0, 125 - Math.trunc((S.score * 125) / king));
+    while (S.pretGauge !== target) { S.pretGauge += S.pretGauge > target ? -1 : 1; invalidate(); await sleep(25); }
+    if (S.kingScore < S.score) {
+      for (let i = 0; i < 6; i++) { S.kingFrame++; S.pretFrame++; invalidate(); await sleep(150); }
+      for (let i = 0; i < 3; i++) {
+        S.pretFrame--; invalidate(); await sleep(150);
+        S.pretFrame++; invalidate(); await sleep(150);
+      }
+      S.phase = 1;
+    }
+  } else {
+    const target = Math.min(125, Math.trunc(((S.score - S.kingScore) * 125) / king));
+    while (S.kingGauge < target) { S.kingGauge++; invalidate(); await sleep(25); }
+  }
+}
+
+async function newGameSetup() {
+  S.board.fill(0); S.removed.fill(0); S.cellFrame.clear(); S.selected = null;
+  initQueue(); invalidate();
+  for (let i = 0; i < 5; i++) await spawnBall();
+  S.score = 0; S.phase = 0;
+  refreshPreview(); updateStats();
+}
+
+async function finishAndRestart() {
+  if (S.phase !== 0) {
+    S.kingName = S.playerName; S.kingScore = S.score; invalidate();
+    for (let i = 0; i < 6; i++) { S.kingFrame = Math.max(0, S.kingFrame - 1); invalidate(); await sleep(150); }
+    while (S.kingGauge !== 0) { S.kingGauge = Math.max(0, S.kingGauge - 4); invalidate(); await sleep(15); }
+  }
+  if (S.pretFrame !== 0) {
+    for (let i = 0; i < 6; i++) { S.pretFrame = Math.max(0, S.pretFrame - 1); invalidate(); await sleep(150); }
+  }
+  while (S.pretGauge !== 125) { S.pretGauge = Math.min(125, S.pretGauge + 4); invalidate(); await sleep(15); }
+  await newGameSetup();
+}
+
+async function recordHighScore() {
+  let rank = 0;
+  while (rank < 10 && S.hs[rank].score >= S.score) rank++;
+  if (rank === 10) return;
+  for (let i = 9; i > rank; i--) S.hs[i] = { ...S.hs[i - 1] };
+  await nameDialog();
+  S.hs[rank] = { name: S.playerName, score: S.score & 0xffff };
+  saveHS();
+  await highScoresDialog();
+}
+
+async function doMove(path, color) {
+  S.selected = null;
+  for (let i = 0; i < path.length - 1; i++) {
+    const [px, py] = path[i], [nx, ny] = path[i + 1];
+    S.board[idx(px, py)] = 0; S.cellFrame.delete(idx(px, py));
+    S.board[idx(nx, ny)] = color;
+    S.cellFrame.set(idx(nx, ny), { frame: i % 6, color });
+    invalidate(); await sleep(50);
+  }
+  const [dx, dy] = path[path.length - 1];
+  S.cellFrame.delete(idx(dx, dy)); invalidate();
+
+  const total = markLines(dx, dy);
+  if (total) {
+    await removeMarked();
+    await addScore(lineScore(total));
+    return;
+  }
+  for (let i = 0; i < 3; i++) await spawnBall();
+  if (countEmpty() !== 0) { refreshPreview(); updateStats(); return; }
+  await msgBox("Game over!", "Color linez", "warn");
+  await recordHighScore();
+  await finishAndRestart();
+}
+
+async function guarded(fn) {
+  if (S.busy || S.exited) return;
+  S.busy = true;
+  try { await fn(); } finally { S.busy = false; invalidate(); }
+}
+
+/* ------------------------------------------------------------------ input */
+function pixelToCell(x, y) {
+  const col = Math.trunc((x - L.boardX) / CELL);
+  if (col < 0 || col > 8) return null;
+  const row = Math.trunc((y - L.boardY) / CELL);
+  if (row < 0 || row > 8) return null;
+  return { col, row };
+}
+function beep() {
+  try {
+    const ac = beep.ac || (beep.ac = new (window.AudioContext || window.webkitAudioContext)());
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = "square"; o.frequency.value = 760; g.gain.value = 0.05;
+    o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime + 0.09);
+  } catch (e) { /* no audio */ }
+}
+function onCellClick(col, row) {
+  if (S.busy || S.dialogs || S.exited) return;
+  const i = idx(col, row);
+  if (!S.selected) {
+    if (S.board[i] === 0) return;
+    S.selected = { col, row }; S.tick = 3; invalidate(); return;
+  }
+  if (S.board[i] !== 0) { S.selected = { col, row }; S.tick |= 3; invalidate(); return; }
+  const { col: sc, row: sr } = S.selected;
+  const color = S.board[idx(sc, sr)];
+  const path = findPath(sc, sr, col, row);
+  if (!path) { beep(); return; }
+  guarded(() => doMove(path, color));
+}
+
+/* ------------------------------------------------------------------ layout */
+let L = null, scale = 1, dpr = 1, mode = "classic";
+function computeLayout(m) {
+  if (m === "classic") {
+    const W = 612, H = 374, bx = Math.trunc((W - 0x148) / 2);
+    return { W, H, boardX: bx, boardY: Math.trunc((H - 0x178) / 2) + 0x2e, previewX: Math.trunc((W - 0x6c) / 2), previewY: 5,
+      curBoxX: W - 0x60, kingBoxX: 0x18, boxY: 10, nextRight: Math.trunc((W - 0x6c) / 2) - 0x0f, colorsLeft: Math.trunc((W - 0x6c) / 2) + 0x7d,
+      kingX: Math.trunc((bx - 0x3a) / 2), pretX: bx + 0x148 + Math.trunc((bx - 0x3a) / 2), baseY: Math.trunc((H - 0xea) / 2) + 0xea };
+  }
+  const W = 360, H = 664, bx = 16, by = 45;
+  const px = Math.trunc((W - 0x6c) / 2);
+  return { W, H, boardX: bx, boardY: by, previewX: px, previewY: 5, curBoxX: W - 72, kingBoxX: -16, boxY: 10,
+    nextRight: px - 8, colorsLeft: px + 108 + 8, kingX: 66, pretX: 236, baseY: by + 330 + 12 + 234 };
+}
+function applyLayout() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const reserve = vw >= 900 ? 196 : 0;                                  // keeps room for the Statistics window on desktop
+  const s1 = Math.min((vw - 10 - reserve) / 612, (vh - 62) / 374);
+  const s2 = Math.min((vw - 10) / 360, (vh - 40) / 664);
+  mode = s2 > s1 ? "compact" : "classic";
+  L = computeLayout(mode);
+  scale = Math.max(0.3, Math.min(mode === "classic" ? s1 : s2, 2.4));
+  dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const cw = Math.round(L.W * scale), ch = Math.round(L.H * scale);
+  canvas.style.width = cw + "px"; canvas.style.height = ch + "px";
+  canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr);
+  const win = document.getElementById("win");
+  win.style.width = cw + 4 + 4 + "px";
+  const wh = win.offsetHeight;
+  win.style.left = Math.max(0, Math.round((vw - win.offsetWidth - (mode === "classic" ? reserve : 0)) / 2)) + "px";
+  win.style.top = Math.max(0, Math.round((vh - wh) / 2)) + "px";
+  positionStats(); invalidate();
+}
+function positionStats() {
+  const win = document.getElementById("win").getBoundingClientRect(), st = document.getElementById("stats");
+  const sw = 180, sh = st.offsetHeight || 340;
+  if (win.right + 8 + sw <= window.innerWidth) { st.style.left = win.right + 8 + "px"; st.style.top = win.top + 28 + "px"; }
+  else { st.style.left = Math.max(2, window.innerWidth - sw - 6) + "px"; st.style.top = Math.max(2, window.innerHeight - sh - 6) + "px"; }
+}
+
+/* ------------------------------------------------------------------ drawing */
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+let raf = 0;
+function invalidate() { if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); }); }
+
+function tile(c, x, y) {
+  c.fillStyle = "#c0c0c0"; c.fillRect(x, y, CELL, CELL);
+  c.fillStyle = "#ffffff"; c.fillRect(x, y, CELL, 2); c.fillRect(x, y, 2, CELL);
+  c.fillStyle = "#808080"; c.fillRect(x, y + CELL - 2, CELL, 2); c.fillRect(x + CELL - 2, y, 2, CELL);
+  c.fillStyle = "#dfdfdf"; c.fillRect(x + 2, y + 2, CELL - 4, 1); c.fillRect(x + 2, y + 2, 1, CELL - 4);
+}
+function ball(c, cx, cy, rx, ry, color, alpha) {
+  const k = COLORS[color]; if (!k) return;
+  c.save(); c.globalAlpha = alpha === undefined ? 1 : alpha;
+  const g = c.createRadialGradient(cx - rx * 0.36, cy - ry * 0.4, Math.min(rx, ry) * 0.08, cx, cy, Math.max(rx, ry));
+  g.addColorStop(0, k.light); g.addColorStop(0.45, k.base); g.addColorStop(1, k.dark);
+  c.fillStyle = g; c.beginPath(); c.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = "rgba(255,255,255,0.6)"; c.beginPath(); c.ellipse(cx - rx * 0.38, cy - ry * 0.42, rx * 0.22, ry * 0.15, -0.6, 0, Math.PI * 2); c.fill();
+  c.restore();
+}
+const BOUNCE = [0, -3, -6, -4, -1, 0];
+function cellSprite(c, x, y, color, frame) {
+  tile(c, x, y);
+  const cx = x + 18, cy = y + 18;
+  if (frame >= 8) {
+    if (frame === 8) { ball(c, cx, cy, 11, 11, color, 0.65); sparks(c, cx, cy, 13, 17, color); }
+    else sparks(c, cx, cy, 10, 16, color);
+    return;
+  }
+  if (!color) return;
+  if (frame === 6) { ball(c, cx, cy, 6, 6, color); return; }
+  if (frame === 7) { ball(c, cx, cy, 10, 10, color); return; }
+  const dy = BOUNCE[frame] || 0;
+  if (dy) { c.fillStyle = "rgba(0,0,0,0.22)"; c.beginPath(); c.ellipse(cx, cy + 14, 11 + dy * 0.5, 3, 0, 0, Math.PI * 2); c.fill(); }
+  if (frame === 5) ball(c, cx, cy + 1.5, 15, 12.5, color); else ball(c, cx, cy + dy, 14, 14, color);
+}
+function sparks(c, cx, cy, r0, r1, color) {
+  c.strokeStyle = COLORS[color] ? COLORS[color].light : "#fff"; c.lineWidth = 2;
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + 0.3;
+    c.beginPath(); c.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0); c.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1); c.stroke();
+  }
+}
+function text(c, s, x, y, align, color, size, bold) {
+  c.font = (bold ? "bold " : "") + size + "px " + FONT; c.textAlign = align; c.textBaseline = "top"; c.fillStyle = color; c.fillText(s, x, y);
+}
+function sunkenRect(c, x, y, w, h) {
+  c.fillStyle = "#000"; c.fillRect(x, y, w, h);
+  c.fillStyle = "#808080"; c.fillRect(x, y, w, 1); c.fillRect(x, y, 1, h);
+  c.fillStyle = "#ffffff"; c.fillRect(x, y + h - 1, w, 1); c.fillRect(x + w - 1, y, 1, h);
+}
+function scoreBox(c, value, x, y) {
+  sunkenRect(c, x, y, 0x48, 0x18);
+  c.fillStyle = "#000"; c.fillRect(x + 4, y + 4, 64, 16);
+  text(c, String(value), x + 4 + 64 - 8, y + 5, "right", "#fff", 12, true);
+}
+function topBar(c) {
+  c.fillStyle = "#c0c0c0"; c.fillRect(0, 0, L.W, 0x2b);
+  c.fillStyle = "#808080"; c.fillRect(0, 0, L.W, 1); c.fillStyle = "#fff"; c.fillRect(0, 1, L.W, 1);
+  c.fillStyle = "#fff"; c.fillRect(0, 0x2a, L.W, 1); c.fillStyle = "#808080"; c.fillRect(0, 0x2b, L.W, 1);
+  text(c, "Next", L.nextRight, 15, "right", "#808080", 12, true);
+  text(c, "Next", L.nextRight - 1, 14, "right", "#fff", 12, true);
+  text(c, "Colors", L.colorsLeft, 15, "left", "#808080", 12, true);
+  text(c, "Colors", L.colorsLeft - 1, 14, "left", "#fff", 12, true);
+  scoreBox(c, S.kingScore, L.kingBoxX, L.boxY);
+  scoreBox(c, S.score, L.curBoxX, L.boxY);
+  for (let i = 0; i < 3; i++) cellSprite(c, L.previewX + i * CELL, L.previewY, S.nextVisible ? S.preview[i] : 0, 6);
+}
+function boardView(c) {
+  const x = L.boardX, y = L.boardY;
+  c.fillStyle = "#555"; c.fillRect(x, y + 327, 328, 1); c.fillRect(x + 327, y, 1, 328);
+  c.fillStyle = "#fff"; c.fillRect(x, y, 328, 1); c.fillRect(x, y, 1, 328);
+  for (let r = 0; r < 9; r++) for (let q = 0; q < 9; q++) {
+    const i = idx(q, r), v = S.board[i] & 0x3f, ov = S.cellFrame.get(i);
+    let frame = 0, color = v;
+    if (ov) { frame = ov.frame; color = ov.color; }
+    else if (S.selected && S.selected.col === q && S.selected.row === r) frame = S.tick % 6;
+    cellSprite(c, x + 2 + q * CELL, y + 2 + r * CELL, color, frame);
+  }
+}
+
+/* The king and the pretender are newly drawn (the original artwork is not used). */
+const SKIN = "#f1c27d", GOLD = "#e0a800";
+function crown(c, x, y, rot) {
+  c.save(); c.translate(x, y); c.rotate(rot);
+  c.fillStyle = GOLD; c.strokeStyle = "#7a5200"; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(-9, 0); c.lineTo(-10, -10); c.lineTo(-4.5, -5); c.lineTo(0, -12); c.lineTo(4.5, -5); c.lineTo(10, -10); c.lineTo(9, 0); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = "#d02020"; c.beginPath(); c.arc(0, -3, 1.8, 0, 7); c.fill();
+  c.restore();
+}
+function drawKing(c, bx, by, f) {
+  c.save(); c.translate(bx, by);
+  c.fillStyle = "#7a2020"; c.fillRect(14, 30, 44, 62); c.beginPath(); c.arc(36, 30, 22, Math.PI, 0); c.fill();
+  c.strokeStyle = GOLD; c.lineWidth = 2; c.strokeRect(14, 30, 44, 62);
+  c.fillStyle = "#5b2a86"; c.beginPath(); c.moveTo(19, 92); c.lineTo(25, 56); c.lineTo(47, 56); c.lineTo(53, 92); c.closePath(); c.fill();
+  c.fillStyle = "#fff"; c.fillRect(21, 85, 30, 7); c.fillStyle = "#222";
+  for (let i = 0; i < 5; i++) c.fillRect(24 + i * 6, 87, 2, 3);
+  c.fillStyle = "#5b2a86"; c.beginPath(); c.ellipse(22, 70, 5, 11, 0.1, 0, 7); c.ellipse(50, 70, 5, 11, -0.1, 0, 7); c.fill();
+  c.fillStyle = SKIN; c.beginPath(); c.arc(22, 81, 3.2, 0, 7); c.arc(50, 81, 3.2, 0, 7); c.fill();
+  c.fillStyle = "#f4f4f4"; c.beginPath(); c.moveTo(25, 46); c.quadraticCurveTo(24, 66, 36, 68); c.quadraticCurveTo(48, 66, 47, 46); c.closePath(); c.fill();
+  c.fillStyle = SKIN; c.beginPath(); c.arc(36, 44, 12, 0, 7); c.fill();
+  c.strokeStyle = "#222"; c.lineWidth = 1.4; c.fillStyle = "#111";
+  c.beginPath(); c.arc(32, 42, 1.5, 0, 7); c.arc(40, 42, 1.5, 0, 7); c.fill();
+  c.beginPath();
+  if (f >= 3) { c.moveTo(29, 37); c.lineTo(34, 39.5); c.moveTo(43, 37); c.lineTo(38, 39.5); } else { c.moveTo(29, 38.5); c.lineTo(34, 38.5); c.moveTo(38, 38.5); c.lineTo(43, 38.5); }
+  c.stroke();
+  c.beginPath();
+  if (f <= 2) c.arc(36, 50, 5, 0.2, Math.PI - 0.2); else if (f === 3) { c.moveTo(31, 54); c.lineTo(41, 54); } else c.arc(36, 59, 5, Math.PI + 0.3, -0.3);
+  c.stroke();
+  if (f >= 5) { c.fillStyle = "#58a0ff"; c.beginPath(); c.ellipse(44, 47, 1.6, 2.6, 0, 0, 7); c.fill(); }
+  if (f <= 3) crown(c, 36, f === 3 ? 28 : 32, f === 3 ? 0.35 : 0);
+  c.fillStyle = "#b8860b"; c.fillRect(12, 90, 48, 8);
+  c.restore();
+}
+function drawPretender(c, bx, by, f) {
+  c.save(); c.translate(bx, by);
+  c.fillStyle = "#2b2b45"; c.fillRect(29, 78, 6, 18); c.fillRect(37, 78, 6, 18);
+  c.fillStyle = "#111"; c.fillRect(27, 94, 9, 4); c.fillRect(36, 94, 9, 4);
+  c.fillStyle = "#2a62b8"; c.fillRect(27, 54, 18, 26);
+  c.fillStyle = "#c82828"; c.fillRect(35, 54, 2, 12);
+  c.strokeStyle = "#2a62b8"; c.lineWidth = 5; c.lineCap = "round";
+  c.beginPath();
+  if (f >= 5) { c.moveTo(28, 58); c.lineTo(17, 42); c.moveTo(44, 58); c.lineTo(55, 42); } else { c.moveTo(28, 58); c.lineTo(22, 76); c.moveTo(44, 58); c.lineTo(50, 76); }
+  c.stroke();
+  c.fillStyle = SKIN; c.beginPath();
+  if (f >= 5) { c.arc(17, 40, 3.3, 0, 7); c.arc(55, 40, 3.3, 0, 7); } else { c.arc(22, 77, 3.3, 0, 7); c.arc(50, 77, 3.3, 0, 7); }
+  c.fill();
+  c.beginPath(); c.arc(36, 42, 11, 0, 7); c.fill();
+  c.fillStyle = "#4a2c0a"; c.beginPath(); c.arc(36, 40, 11.5, Math.PI, 0); c.fill();
+  c.fillStyle = "#111"; c.beginPath(); c.arc(32, 43, 1.5, 0, 7); c.arc(40, 43, 1.5, 0, 7); c.fill();
+  c.strokeStyle = "#222"; c.lineWidth = 1.4; c.lineCap = "butt"; c.beginPath();
+  if (f >= 5) c.arc(36, 46, 5, 0.1, Math.PI - 0.1); else if (f === 4) c.arc(36, 50, 2.5, 0, 7); else { c.moveTo(32, 50); c.lineTo(36, 51); c.lineTo(41, 48.5); }
+  c.stroke();
+  if (f === 4) crown(c, 36, 16, 0.15);
+  else if (f === 5) crown(c, 36, 31, 0.2);
+  else if (f >= 6) {
+    crown(c, 36, 31, 0);
+    c.fillStyle = "#fff6a0";
+    for (const [sx, sy] of [[18, 22], [56, 22], [12, 52], [60, 52]]) { c.beginPath(); c.moveTo(sx, sy - 4); c.lineTo(sx + 1.2, sy - 1.2); c.lineTo(sx + 4, sy); c.lineTo(sx + 1.2, sy + 1.2); c.lineTo(sx, sy + 4); c.lineTo(sx - 1.2, sy + 1.2); c.lineTo(sx - 4, sy); c.lineTo(sx - 1.2, sy - 1.2); c.closePath(); c.fill(); }
+  }
+  c.restore();
+}
+function column(c, kind, boxX, gauge, frame, name) {
+  const top = L.baseY - 234, boxTop = top + gauge, cx = boxX + 36;
+  const poleTop = boxTop + 100, poleBottom = L.baseY - 9;
+  if (poleBottom > poleTop) {
+    const g = c.createLinearGradient(cx - 22, 0, cx + 22, 0);
+    g.addColorStop(0, "#5a5a5a"); g.addColorStop(0.4, "#d0d0d0"); g.addColorStop(1, "#4a4a4a");
+    c.fillStyle = g; c.fillRect(cx - 22, poleTop, 45, poleBottom - poleTop);
+    c.fillStyle = "rgba(0,0,0,0.25)";
+    for (let y = poleTop + 10; y < poleBottom; y += 14) c.fillRect(cx - 22, y, 45, 1);
+  }
+  const bg = c.createLinearGradient(cx - 29, 0, cx + 29, 0);
+  bg.addColorStop(0, "#707070"); bg.addColorStop(0.5, "#e0e0e0"); bg.addColorStop(1, "#606060");
+  c.fillStyle = bg; c.fillRect(cx - 29, L.baseY - 9, 58, 9);
+  if (kind === "king") drawKing(c, boxX, boxTop, frame); else drawPretender(c, boxX, boxTop, frame);
+  text(c, name, cx, L.baseY + 8, "center", "#fff", 11, false);
+}
+function render() {
+  if (!L) return;
+  ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, L.W, L.H);
+  boardView(ctx);
+  column(ctx, "king", L.kingX - 1, S.kingGauge, S.kingFrame, S.kingName);
+  column(ctx, "pret", L.pretX - 10, S.pretGauge, S.pretFrame, "Pretender");
+  topBar(ctx);
+}
+
+/* ------------------------------------------------------------------ DOM helpers, dialogs */
+function h(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (k === "class") e.className = v; else if (k === "style") e.style.cssText = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c !== null && c !== undefined) e.append(c);
+  return e;
+}
+function openDialog(title, body, buttons, opts = {}) {
+  return new Promise((resolve) => {
+    S.dialogs++;
+    const overlay = h("div", { class: "overlay" });
+    const bar = h("div", { class: "titlebar" }, h("span", { class: "t" }, title));
+    const foot = h("div", { class: "row-c" });
+    const dlg = h("div", { class: "dlg raised", role: "dialog", "aria-label": title, style: opts.width ? "width:" + opts.width + "px" : "" },
+      bar, h("div", { class: "body" }, body, foot));
+    let closed = false;
+    const close = (v) => { if (closed) return; closed = true; S.dialogs--; document.removeEventListener("keydown", onKey, true); overlay.remove(); resolve(v); };
+    const btnEls = buttons.map((b) => {
+      const e = h("button", { class: "btn" + (b.def ? " def" : ""), type: "button" }, b.label);
+      e.addEventListener("click", () => { if (b.action) { if (b.action(close) === false) return; } else close(b.value); });
+      foot.append(e); return e;
+    });
+    function onKey(ev) {
+      if (ev.key === "Enter" && !(document.activeElement instanceof HTMLButtonElement)) { ev.preventDefault(); ev.stopPropagation(); (btnEls.find((_, i) => buttons[i].def) || btnEls[0]).click(); }
+      else if (ev.key === "Escape" && opts.escape) { ev.preventDefault(); ev.stopPropagation(); close(); }
+      else if (ev.key === "Tab") return;
+      else if (ev.key.startsWith("F") && ev.key.length <= 3 && ev.key !== "F") ev.preventDefault();
+    }
+    document.addEventListener("keydown", onKey, true);
+    overlay.append(dlg); document.body.append(overlay);
+    const first = opts.focus ? opts.focus() : (btnEls.find((_, i) => buttons[i].def) || btnEls[0]);
+    if (first) first.focus();
+  });
+}
+function msgBox(message, title, icon) {
+  const mark = icon === "warn" ? "!" : icon === "err" ? "\u00d7" : "i";
+  return openDialog(title, h("div", { class: "msg" }, h("div", { class: "ico " + (icon || "info") }, mark), h("p", {}, message)),
+    [{ label: "OK", def: true, value: true }], { escape: true, width: 280 });
+}
+function rulesDialog() {
+  return openDialog("Rules", h("div", { class: "group", style: "padding:8px 10px" },
+    h("p", {}, 'Score more points than the "king". Your score goes up when you build a horizontal, vertical or diagonal line of five or more balls of one colour. You make these lines by moving balls across vacant squares.'),
+    h("p", { style: "margin-top:6px" }, "A move that clears a line gives you another move; any other move brings three new balls. The game ends when the board is full. We wish you success.")),
+    [{ label: "Ok", def: true, value: true }], { escape: true, width: 300 });
+}
+function aboutDialog() {
+  return openDialog("About", h("div", { class: "credits", style: "display:flex;flex-direction:column;gap:8px" },
+    h("div", { class: "group", style: "padding:8px" }, h("p", { style: "font-weight:bold;margin-bottom:4px" }, "Original version credits"),
+      h("p", {}, "Copyright (c) GAMOS LTD. 1992. Russia"), h("p", {}, "Programming: Olga Demina"), h("p", {}, "Graphics: Igor Ivkin & Gennady Denisov")),
+    h("div", { class: "group", style: "padding:8px" }, h("p", { style: "font-weight:bold;margin-bottom:4px" }, "Credits"),
+      h("p", {}, "Win32 version 1.21: Ivan Golubev (1998-1999)"),
+      h("p", {}, "This page is an HTML recreation of Color Linez, rebuilt from the behaviour of the Win32 version."),
+      h("p", {}, "All artwork here is newly drawn."))),
+    [{ label: "Ok", def: true, value: true }], { escape: true, width: 330 });
+}
+function highScoresDialog() {
+  const tbody = h("tbody");
+  S.hs.forEach((e, i) => tbody.append(h("tr", {}, h("td", {}, `${i + 1}. ${e.name}`), h("td", {}, String(e.score)))));
+  return openDialog("High Scores", h("div", { class: "group", style: "padding:6px" }, h("table", { class: "hs" }, tbody)),
+    [{ label: "Ok", def: true, value: true }], { escape: true, width: 300 });
+}
+function nameDialog() {
+  const input = h("input", { class: "name", type: "text", maxlength: "15", value: S.playerName, autocomplete: "off", spellcheck: "false", "aria-label": "Name" });
+  return openDialog("Congratulations", h("div", { class: "group", style: "padding:10px;display:flex;align-items:center;gap:8px" }, h("span", {}, "Enter you name:"), input),
+    [{ label: "Ok", def: true, action: (close) => {
+      const v = input.value;
+      const bad = (m) => { msgBox(m, "Error", "err").then(() => { input.focus(); input.select(); }); return false; };
+      if (v.length === 0) return bad("You must enter some name");
+      if (v.length >= 14) return bad("Name too long");
+      for (let i = 0; i < v.length; i++) if (v.charCodeAt(i) > 0x7f) return bad("You can use only latin characters");
+      S.playerName = v; close(v); return true;
+    } }], { width: 300, focus: () => { input.select(); return input; } });
+}
+
+/* ------------------------------------------------------------------ statistics window */
+const srows = document.getElementById("srows"), srowEls = [];
+function buildStats() {
+  for (let i = 0; i < 8; i++) {
+    const cv = h("canvas", { width: String(CELL * 2), height: String(CELL * 2) });
+    const c = cv.getContext("2d"); c.scale(2, 2); cellSprite(c, 0, 0, i, 0);
+    const t = h("span", {});
+    srows.append(h("div", { class: "r" }, cv, t)); srowEls.push(t);
+  }
+}
+function updateStats() {
+  const counts = new Array(8).fill(0);
+  for (let i = 0; i < 81; i++) counts[S.board[i] & 7]++;
+  srowEls.forEach((t, i) => {
+    let s = `${counts[i]} (${Math.trunc((counts[i] * 100) / 81)}%)`;
+    if (i) s += `, del-${S.removed[i]}`;
+    t.textContent = s;
+  });
+}
+function setStats(show) {
+  S.statsVisible = show;
+  document.getElementById("stats").classList.toggle("show", show);
+  if (show) { updateStats(); positionStats(); }
+}
+
+/* ------------------------------------------------------------------ menu, commands */
+const MENUS = [
+  { label: "File", items: [{ id: "new", label: "New", key: "F4" }, { id: "scores", label: "Show high scores" }, { sep: 1 }, { id: "exit", label: "Exit", key: "Alt-X" }] },
+  { label: "Options", items: [{ id: "next", label: "Next", key: "F3", check: () => S.nextVisible }, { id: "stats", label: "Show statistics", key: "F5", check: () => S.statsVisible }] },
+  { label: "Help", items: [{ id: "rules", label: "Rules", key: "F1" }, { sep: 1 }, { id: "about", label: "About ..." }] }
+];
+const menubar = document.getElementById("menubar");
+let openMenu = -1;
+function buildMenu() {
+  menubar.replaceChildren();
+  MENUS.forEach((m, mi) => {
+    const mEl = h("div", { class: "mi" + (openMenu === mi ? " open" : ""), role: "menuitem", tabindex: "0" }, m.label);
+    mEl.addEventListener("pointerdown", (ev) => { ev.preventDefault(); openMenu = openMenu === mi ? -1 : mi; buildMenu(); });
+    mEl.addEventListener("pointerenter", () => { if (openMenu >= 0 && openMenu !== mi) { openMenu = mi; buildMenu(); } });
+    mEl.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { openMenu = openMenu === mi ? -1 : mi; buildMenu(); } });
+    menubar.append(mEl);
+    if (openMenu === mi) {
+      const dd = h("div", { class: "dropdown raised", style: "left:" + mEl.offsetLeft + "px" });
+      m.items.forEach((it) => {
+        if (it.sep) { dd.append(h("div", { class: "sep" })); return; }
+        const row = h("div", { class: "it", role: "menuitem" }, h("span", { class: "chk" }, it.check && it.check() ? "\u2713" : ""), h("span", {}, it.label), h("span", {}, it.key || ""));
+        row.addEventListener("pointerdown", (ev) => { ev.preventDefault(); ev.stopPropagation(); openMenu = -1; buildMenu(); command(it.id); });
+        dd.append(row);
+      });
+      menubar.append(dd);
+      const left = mEl.offsetLeft;
+      dd.style.left = left + "px";
+    }
+  });
+}
+document.addEventListener("pointerdown", (ev) => {
+  if (openMenu < 0) return;
+  const inside = ev.composedPath().some((n) => n.classList && n.classList.contains("menubar"));
+  if (!inside) { openMenu = -1; buildMenu(); }
+});
+
+function command(id) {
+  if (S.exited || S.dialogs) return;
+  switch (id) {
+    case "new": if (S.busy) return; guarded(async () => { S.selected = null; await recordHighScore(); await finishAndRestart(); }); break;
+    case "scores": highScoresDialog(); break;
+    case "exit": exitGame(); break;
+    case "next": S.nextVisible = !S.nextVisible; invalidate(); break;
+    case "stats": setStats(!S.statsVisible); break;
+    case "rules": rulesDialog(); break;
+    case "about": aboutDialog(); break;
+  }
+}
+function exitGame() {
+  S.exited = true; saveHS();
+  document.getElementById("win").style.display = "none"; setStats(false);
+  document.getElementById("exited").classList.add("show");
+  document.getElementById("relaunch").focus();
+}
+document.addEventListener("keydown", (ev) => {
+  if (S.dialogs || S.exited) return;
+  const map = { F1: "rules", F3: "next", F4: "new", F5: "stats" };
+  if (map[ev.key]) { ev.preventDefault(); command(map[ev.key]); }
+  else if (ev.altKey && (ev.key === "x" || ev.key === "X")) { ev.preventDefault(); command("exit"); }
+});
+document.getElementById("tclose").addEventListener("click", () => command("exit"));
+document.getElementById("sclose").addEventListener("click", () => setStats(false));
+document.getElementById("relaunch").addEventListener("click", () => location.reload());
+
+/* ------------------------------------------------------------------ pointer on the board */
+function logical(ev) { const r = canvas.getBoundingClientRect(); return [(ev.clientX - r.left) / scale, (ev.clientY - r.top) / scale]; }
+canvas.addEventListener("pointerdown", (ev) => {
+  if (ev.button > 0) return;
+  const [x, y] = logical(ev); S.down = pixelToCell(x, y) || "outside";
+});
+canvas.addEventListener("pointerup", (ev) => {
+  if (ev.button > 0) return;
+  const [x, y] = logical(ev), c = pixelToCell(x, y), d = S.down; S.down = null;
+  if (!c || !d || d === "outside" || d.col !== c.col || d.row !== c.row) return;
+  onCellClick(c.col, c.row);
+});
+
+/* ------------------------------------------------------------------ icons, start-up */
+function iconBall(cv, color) {
+  const c = cv.getContext("2d"); c.clearRect(0, 0, cv.width, cv.height);
+  const s = cv.width / 36; c.scale(s, s); ball(c, 18, 18, 15, 15, color);
+}
+function init() {
+  iconBall(document.getElementById("ticon"), 1);
+  iconBall(document.getElementById("eicon"), 1);
+  buildMenu(); buildStats();
+  S.hs = loadHS(); S.kingName = S.hs[0].name; S.kingScore = S.hs[0].score;
+  applyLayout();
+  window.addEventListener("resize", applyLayout);
+  setInterval(() => { S.tick++; if (S.selected && !S.busy) invalidate(); }, 50);
+  guarded(newGameSetup);
+}
+window.__linez = { S, T, findPath, markLines, lineScore, spawnBall, newGameSetup, addScore, finishAndRestart, recordHighScore, command, randBelow, pixelToCell, get L() { return L; }, get mode() { return mode; }, loadHS, defaultHS, onCellClick, guarded, countEmpty };
+init();
+})();
+</script>
+</body>
+</html>

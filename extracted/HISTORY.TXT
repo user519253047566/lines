@@ -1,0 +1,24 @@
+Color Linez: versions history
+=============================
+
+! Bug fixed
++ New feature/modification
+
+Mar, 29 1999 v1.21
+------------------
+  ! Some small corrections, optimized file structure
+
+Feb, 23 1999 v1.2
+-----------------
+  ! Crashed of some systems (can't start at all)
+  ! Memory leaks when minimized
+
+Nov, 27 1998 v1.1
+-----------------
+  ! Hang on some machines
+  ! Drawing operations
+  +(-?) Ripped out titul screen, "music" and renamed to Color Linez
+
+Jun, 17 1998 v1.0
+-----------------
+  Original release

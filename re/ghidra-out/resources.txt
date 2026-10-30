@@ -1,0 +1,74 @@
+Resource entries:
+BITMAP       id=2000 lang=0 rva=0x602f8 size=1864
+BITMAP       id=2001 lang=0 rva=0x60a40 size=648
+ICON         id=1 lang=0 rva=0x60cc8 size=744
+MENU         id=1100 lang=0 rva=0x60fb0 size=268
+DIALOG       id=1000 lang=0 rva=0x610bc size=712
+DIALOG       id=1001 lang=0 rva=0x61384 size=136
+DIALOG       id=1002 lang=0 rva=0x6140c size=228
+DIALOG       id=1003 lang=0 rva=0x614f0 size=1002
+DIALOG       id=1004 lang=0 rva=0x618dc size=86
+ACCELERATOR  id=1100 lang=0 rva=0x61934 size=40
+GROUP_ICON   id=3000 lang=0 rva=0x6195c size=20
+VERSION      id=1 lang=0 rva=0x61970 size=624
+
+MENU id=1100
+  POPUP '&File' flags=0x10
+    ITEM id=0x100 '&NewF4' flags=0x0
+    ITEM id=0x101 'Show &high scores' flags=0x0
+    ITEM id=0x0 '' flags=0x0
+    ITEM id=0x102 'E&xitAlt-X' flags=0x80
+  POPUP '&Options' flags=0x10
+    ITEM id=0x200 '&NextF3' flags=0x8
+    ITEM id=0x201 'Show &statisticsF5' flags=0x80
+  POPUP '&Help' flags=0x4090
+    ITEM id=0x300 '&RulesF1' flags=0x0
+    ITEM id=0x0 '' flags=0x0
+    ITEM id=0x301 '&About ...' flags=0x80
+
+ACCELERATOR id=1100
+  flags=0x1 [VIRTKEY] key=0x70 cmd=0x300
+  flags=0x1 [VIRTKEY] key=0x72 cmd=0x200
+  flags=0x1 [VIRTKEY] key=0x73 cmd=0x100
+  flags=0x1 [VIRTKEY] key=0x74 cmd=0x201
+  flags=0x90 [ALT] key=0x78 cmd=0x102
+
+DIALOG id=1000
+  style=0x80c808c4 pos=(16,16) size=(160,98) controls=3 title='Rules'
+  - BUTTON id=65535 pos=(4,2) size=(152,66) style=0x50000007 text=''
+  - STATIC id=65535 pos=(8,8) size=(144,56) style=0x50020001 text='The purpose of the game is to score points more than the "king" has. Your score will increase when you build up a horizontal, vertical or diagonal line consisting of five or more one-color balls. You can make these lines by moving balls across vacant squares. We wish you success.'
+  - BUTTON id=256 pos=(57,76) size=(46,16) style=0x50010001 text='&Ok'
+
+DIALOG id=1001
+  style=0x80c800c4 pos=(16,16) size=(160,146) controls=2 title='High Scores'
+  - BUTTON id=65535 pos=(4,4) size=(152,106) style=0x50000007 text=''
+  - BUTTON id=256 pos=(57,120) size=(46,16) style=0x50010000 text='&Ok'
+
+DIALOG id=1002
+  style=0x80c800c4 pos=(32,32) size=(160,58) controls=4 title='Congratulations'
+  - BUTTON id=65535 pos=(4,2) size=(152,24) style=0x50000007 text=''
+  - STATIC id=65535 pos=(8,12) size=(64,12) style=0x50020000 text='Enter you name:'
+  - EDIT id=257 pos=(80,10) size=(72,12) style=0x50810000 text=''
+  - BUTTON id=256 pos=(57,34) size=(46,16) style=0x50010001 text='&Ok'
+
+DIALOG id=1003
+  style=0x80c800c4 pos=(16,16) size=(176,196) controls=12 title='About'
+  - BUTTON id=65535 pos=(4,4) size=(168,66) style=0x50000007 text='Original version credits'
+  - BUTTON id=256 pos=(64,172) size=(46,16) style=0x50010000 text='&Ok'
+  - STATIC id=65535 pos=(60,14) size=(90,16) style=0x50000000 text='Copyright (c) GAMOS LTD. 1992. Russia'
+  - STATIC id=65535 pos=(60,34) size=(90,8) style=0x50000000 text='Programming: Olga Demina'
+  - STATIC id=65535 pos=(60,46) size=(90,8) style=0x50000080 text='Graphics: Igor Ivkin &'
+  - STATIC id=65535 pos=(92,54) size=(60,8) style=0x50000000 text='Gennady Denisov'
+  - BUTTON id=65535 pos=(4,76) size=(168,84) style=0x50000007 text='Credits'
+  - STATIC id=65535 pos=(10,88) size=(156,8) style=0x50000081 text='Win32 programming, advanced graphics:'
+  - STATIC id=65535 pos=(10,98) size=(156,8) style=0x50000001 text='Copyright (c) 1998-1999 Ivan Golubev'
+  - STATIC id=65535 pos=(10,112) size=(156,8) style=0x50000001 text='Special thanks to Andrew Wizard'
+  - STATIC id=65535 pos=(10,124) size=(156,16) style=0x50000001 text='This game was written as a present to my brother's birthday!'
+  - STATIC id=65535 pos=(10,144) size=(156,8) style=0x50000001 text='version 1.21'
+
+DIALOGEX id=1004
+  style=0x90c800c4 pos=(0,0) size=(80,144) controls=0 title='Statistics'
+
+BITMAP id=2000: 67x50, 4 bpp, 1864 bytes
+
+BITMAP id=2001: 67x50, 1 bpp, 648 bytes
